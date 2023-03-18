@@ -3,6 +3,12 @@ const MongoClient = require('mongodb').MongoClient;
 const express = require('express');
 const app = express();
 
+app.set('view engine', 'ejs');
+
+app.use(express.static('public'));
+
+app.use(bodyParser.json());
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
 MongoClient.connect(
@@ -17,10 +23,10 @@ MongoClient.connect(
       db.collection('quotes')
         .find()
         .toArray()
-        .then((results) => console.log(results))
+        .then((results) => {
+          res.render('index.ejs', { quotes: results });
+        })
         .catch((err) => console.log(err));
-
-      res.sendFile(__dirname + '/index.html');
     });
 
     app.post('/quotes', (req, res) => {
@@ -30,6 +36,33 @@ MongoClient.connect(
           res.redirect('/');
         })
         .catch((err) => console.log(err));
+    });
+
+    app.put('/quotes', (req, res) => {
+      quotesCollection
+        .findOneAndUpdate(
+          { name: 'John' },
+          {
+            $set: {
+              name: req.body.name,
+              quote: req.body.quote,
+            },
+          },
+          {
+            upsert: true,
+          }
+        )
+        .then((result) => console.log(result))
+        .catch((err) => console.log(err));
+    });
+
+    app.delete('/quotes', (req, res) => {
+      quotesCollection
+        .deleteOne({ name: req.body.name })
+        .then((result) => {
+          res.json(`Deleted Darth Vader's quote`);
+        })
+        .catch((error) => console.error(error));
     });
   })
   .catch((err) => console.log(err));
